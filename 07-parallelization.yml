@@ -1,0 +1,73 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: 07-parallelization
+spec:
+  entrypoint: template-start
+  templates:
+    - name: template-start
+      steps:
+        - - name: greet-people-from-list
+            template: template-print
+            arguments:
+              parameters:
+              - name: firstname
+                value: "{{item.firstname}}"
+              - name: surname
+                value: "{{item.surname}}"
+            withItems:
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+              - {firstname: "Anna", surname: "Frank"}
+        - - name: find-people
+            template: template-query
+        - - name: greet-people-from-database
+            template: template-print
+            arguments:
+              parameters:
+              - name: firstname
+                value: "{{item.firstname}}"
+              - name: surname
+                value: "{{item.surname}}"
+            withParam: "{{steps.find-people.outputs.parameters.users}}" # json list            
+    - name: template-print
+      inputs:
+        parameters:
+        - name: firstname
+        - name: surname
+      container:
+        name: main
+        image: "alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: [echo]
+        args: ["Salute {{inputs.parameters.firstname}} {{inputs.parameters.surname}} !"]
+    - name: template-query
+      outputs:
+        parameters:
+        - name: users
+          valueFrom:
+            path: "/tmp/users.json"
+      script:
+        image: "python:alpine3.13"
+        imagePullPolicy: IfNotPresent
+        command: [python]
+        source: |
+          import json
+          users = list()
+          for x in range(20):
+            users.append({
+              "firstname": "Sonya",
+              "surname": "Sotomayor",
+            })
+
+          f = open("/tmp/users.json", "w")
+          f.write(json.dumps(users))
+          f.close()
+          exit(0)

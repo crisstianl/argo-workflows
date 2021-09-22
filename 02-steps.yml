@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: 02-steps
+spec:
+  entrypoint: template-start
+  templates:
+    - name: template-start
+      steps:
+        - - name: init
+            template: template-sleep
+        - - name: build-java
+            template: template-sleep
+          - name: build-python
+            template: template-sleep
+          - name: build-golang
+            template: template-sleep
+        - - name: test-java
+            template: template-sleep
+          - name: test-python
+            template: template-sleep
+          - name: test-golang
+            template: template-sleep
+        - - name: deploy
+            template: template-sleep
+    - name: template-sleep
+      container:
+        name: main
+        image: "alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: [sleep]
+        args: ['2']

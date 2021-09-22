@@ -1,0 +1,81 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: 05-artifacts
+spec:
+  entrypoint: template-start
+  templates:
+    - name: template-start
+      steps:
+        - - name: get-users
+            template: template-export-users
+        - - name: greet-user
+            template: template-print-file
+            arguments:
+              artifacts:
+                - name: file
+                  from: "{{steps.get-users.outputs.artifacts.usersFile}}" 
+                  # reference an artifact from a previous step
+                  # gcs, git, hdfs, http, oss, s3
+        - - name: greet-people
+            template: template-print-dir
+            arguments:
+              artifacts:
+                - name: directory
+                  from: "{{steps.get-users.outputs.artifacts.usersDir}}"
+    - name: template-print-file
+      inputs:
+        artifacts:
+          - name: file
+            path: "/tmp/print"
+      container:
+        name: main
+        image: "alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: [sh, -c]
+        args: ["cat /tmp/print"]
+    - name: template-print-dir
+      inputs:
+        artifacts:
+          - name: directory
+            path: "/tmp/print"
+      script:
+        name: main
+        image: "alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: [/bin/sh]
+        source: |
+          cd /tmp/print
+          for entry in `ls`
+          do
+            cat "$entry"
+            echo
+          done
+    - name: template-export-users
+      outputs:
+        artifacts:
+          - name: usersFile
+            path: "/tmp/users/elena.txt"
+          - name: usersDir
+            path: "/tmp/users"
+      script:
+        image: "python:alpine3.13"
+        imagePullPolicy: IfNotPresent
+        command: [python]
+        source: |
+          import os
+
+          os.makedirs("/tmp/users")
+          f = open("/tmp/users/elena.txt", "w")
+          f.write("Elena Christensen")
+          f.close()
+
+          f = open("/tmp/users/jane.txt", "w")
+          f.write("Jane Austen")
+          f.close()
+
+          f = open("/tmp/users/isabella.txt", "w")
+          f.write("Isabella of Castile")
+          f.close()
+
+          exit(0)

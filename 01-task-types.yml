@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: 01-task-types
+spec:
+  entrypoint: template-start
+  templates:
+    - name: template-start
+      steps:
+        - - name: run-container
+            template: template-print-message-from-container
+        - - name: run-shell-script
+            template: template-print-message-from-bash
+        - - name: run-python-script
+            template: template-print-message-from-python
+        - - name: create-configmap
+            template: template-create-configmap
+        - - name: wait-10secs
+            template: template-wait
+    - name: template-print-message-from-container
+      container:
+        name: main
+        image: "docker/whalesay:latest"
+        imagePullPolicy: IfNotPresent
+        command: [cowsay]
+        args: ["Hi from whalesay"]
+    - name: template-print-message-from-bash
+      script:
+        image: "alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: [/bin/sh]
+        source: |
+          echo "Hi from bash"
+    - name: template-print-message-from-python
+      script:
+        image: "python:alpine3.13"
+        imagePullPolicy: IfNotPresent
+        command: [python]
+        source: |
+          print("Hi from python")
+    - name: template-create-configmap
+      resource:
+        action: apply
+        manifest: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: configmap-created-froma-argo
+          data:
+            username: argo
+            password: admin
+    - name: template-wait
+      suspend:
+        duration: "10s" # or "2m", "6h", "1d"

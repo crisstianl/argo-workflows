@@ -1,0 +1,103 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: 04-parameters
+spec:
+  entrypoint: template-start
+  arguments:
+    parameters:
+    - name: salute
+      value: "Hello"
+  templates:
+    - name: template-start
+      steps:
+        - - name: greet-anne
+            template: template-print
+            arguments:
+              parameters:
+              - name: firstname
+                value: "Anne"
+              - name: surname
+                value: "Frank"
+        - - name: greet-elena
+            template: template-print
+            arguments:
+              parameters: [{name: firstname, value: "Elena"}, {name: surname, value: "Christensen"}]
+        - - name: list-girls
+            template: template-query
+        - - name: greet-girls
+            template: template-print
+            arguments:
+              parameters:
+                - name: firstname
+                  value: "{{item.firstname}}"
+                - name: surname
+                  value: "{{item.surname}}"
+            withParam: "{{steps.list-girls.outputs.result}}"
+        - - name: list-boys
+            template: template-export
+        - - name: greet-boys
+            template: template-print
+            arguments:
+              parameters:
+                - name: firstname
+                  value: "{{item.firstname}}"
+                - name: surname
+                  value: "{{item.surname}}"
+            withParam: "{{steps.list-boys.outputs.parameters.export}}" # json list
+    - name: template-print
+      inputs:
+        parameters:
+        - name: firstname
+        - name: surname
+      container:
+        name: main
+        image: "alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: [echo]
+        args: ["{{workflow.parameters.salute}} {{inputs.parameters.firstname}} {{inputs.parameters.surname}} !"]
+    - name: template-query
+      script:
+        image: "python:alpine3.13"
+        imagePullPolicy: IfNotPresent
+        command: [python]
+        source: |
+          import json
+          users = [
+            {
+              "firstname": "Rossa",
+              "surname": "Parks",
+            },
+            {
+              "firstname": "Marie",
+              "surname": "Curie",
+            },
+          ]
+          print(json.dumps(users))
+          exit(0)
+    - name: template-export
+      outputs:
+        parameters:
+        - name: export
+          valueFrom:
+            path: "/tmp/users.json"
+      script:
+        image: "python:alpine3.13"
+        imagePullPolicy: IfNotPresent
+        command: [python]
+        source: |
+          import json
+          users = [
+            {
+              "firstname": "Ryan",
+              "surname": "Gosling",
+            },
+            {
+              "firstname": "Daniel",
+              "surname": "Craig",
+            },
+          ]
+          f = open("/tmp/users.json", "w")
+          f.write(json.dumps(users))
+          f.close()
+          exit(0)

@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: 03-dags
+spec:
+  entrypoint: template-start
+  templates:
+    - name: template-start
+      dag:
+        tasks:
+          - name: init
+            template: template-sleep
+          - name: build-java
+            dependencies: [init]
+            template: template-sleep
+          - name: build-python
+            dependencies: [init]
+            template: template-sleep
+          - name: build-golang
+            dependencies: [init]
+            template: template-sleep
+          - name: test-java
+            dependencies: [build-java]
+            template: template-sleep
+          - name: test-python
+            dependencies: [build-python]
+            template: template-sleep
+          - name: test-golang
+            dependencies: [build-golang]
+            template: template-sleep
+          - name: deploy
+            dependencies: [test-java, test-python, test-golang]
+            template: template-sleep
+    - name: template-sleep
+      container:
+        name: main
+        image: "alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: [sleep]
+        args: ['2']

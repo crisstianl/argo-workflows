@@ -1,0 +1,54 @@
+#      ┌────────────────── timezone (optional)
+#      |      ┌───────────── minute (0 - 59)
+#      |      │ ┌───────────── hour (0 - 23)
+#      |      │ │ ┌───────────── day of the month (1 - 31)
+#      |      │ │ │ ┌───────────── month (1 - 12)
+#      |      │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday;
+#      |      │ │ │ │ │                                   7 is also Sunday on some systems)
+#      |      │ │ │ │ │
+#      |      │ │ │ │ │
+# CRON_TZ=UTC * * * * *
+
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: 06-cron-workflows1
+spec:
+  schedule: '*/1 * * * *'
+  concurrencyPolicy: "Forbid" # do not allow any new while there are old
+  activeDeadlineSeconds: 60 # wait 1 minute for the workflow to start
+  workflowSpec:
+    entrypoint: template-start
+    podGC:
+      strategy: OnWorkflowSuccess # delete pods when workflow is successful
+    templates:
+      - name: template-start
+        steps:
+          - - name: run-tests
+              template: template-print
+              arguments:
+                parameters:
+                  - name: message
+                    value: "Running system tests"
+          - - name: publish-results
+              template: template-print
+              arguments:
+                parameters:
+                  - name: message
+                    value: "Publishing test results"
+          - - name: notify
+              template: template-print
+              arguments:
+                parameters:
+                  - name: message
+                    value: "Sending status emails"
+      - name: template-print
+        inputs:
+          parameters:
+          - name: message
+        container:
+          name: main
+          image: "alpine:3.13"
+          imagePullPolicy: IfNotPresent
+          command: [echo]
+          args: ["{{inputs.parameters.message}}"]
