@@ -18,11 +18,11 @@ Workflow engine that orchestrate complex jobs in kubernetes clusters.
 - Archives, keep history of completed workflows.
 
 ### Instalation
-Kubernetes cluster (Minikube, Docker for desktop, GKE, EC2)
-kubernetes CLI (kubectl)
-`kubectl cluster-info`
-`kubectl apply -n default -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml`
-`kubectl get pods –n default | grep argo`
+Kubernetes cluster (Minikube, Docker for desktop, GKE, EC2)  
+kubernetes CLI (kubectl)  
+`kubectl cluster-info`  
+`kubectl apply -n default -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml`  
+`kubectl get pods –n default | grep argo`  
 
 ### Examples
 1. Job types
